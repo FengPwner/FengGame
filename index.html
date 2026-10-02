@@ -778,8 +778,7 @@
         </footer>
     </div>
 
-    <script>
-        // ===== 加载画面（真实渲染等待 + sessionStorage 跳过重复加载） =====
+    <script>        
         const loader = document.getElementById('loader');
         const loaderBarFill = document.querySelector('.loader-bar-fill');
         const loaderText = document.querySelector('.loader-text');
@@ -789,8 +788,7 @@
             if (loaderHidden) return;
             loaderHidden = true;
             loader.classList.add('hidden');
-            sessionStorage.setItem('hasLoaded', 'true');
-            // 延迟启动卡片入场动画，等遮罩层淡出
+            sessionStorage.setItem('hasLoaded', 'true');            
             setTimeout(() => {
                 loader.style.display = 'none';
                 startCardAnimations(0);
@@ -804,24 +802,21 @@
                 percentSpan.textContent = percent;
             }
         }
-
-        // 首次访问才执行加载逻辑
+        
         if (!sessionStorage.getItem('hasLoaded')) {
-            // DOM 内容加载完毕 → 进度到 70%
+            
             document.addEventListener('DOMContentLoaded', () => {
                 setProgress(70);
             });
-
-            // 所有资源加载完毕 → 进度到 100%，然后结束
+            
             window.addEventListener('load', () => {
                 setProgress(100);
-                // 确保至少展示 300ms，防止闪屏
+                
                 const elapsed = Date.now() - window.performance.timing.loadEventStart;
                 const minDisplay = Math.max(300 - elapsed, 0);
                 setTimeout(hideLoader, minDisplay);
             });
-
-            // 超时兜底：8 秒内未完成则强制结束，防止永久白屏
+            
             setTimeout(() => {
                 if (!loaderHidden) {
                     setProgress(100);
@@ -829,12 +824,11 @@
                 }
             }, 8000);
         } else {
-            // 已加载过 — 直接隐藏，无动画
+            
             loader.style.display = 'none';
             startCardAnimations(0);
         }
-
-        // ===== 星空粒子背景 =====
+        
         const canvas = document.getElementById('starfield');
         const ctx = canvas.getContext('2d');
         let stars = [];
@@ -884,9 +878,7 @@
         window.addEventListener('resize', () => {
             resizeCanvas();
             createStars();
-        });
-
-        // ===== 卡片 3D 鼠标追踪 =====
+        });        
         document.querySelectorAll('.game-card').forEach(card => {
             card.addEventListener('mousemove', (e) => {
                 const rect = card.getBoundingClientRect();
@@ -896,8 +888,7 @@
                 card.style.setProperty('--mouse-y', y + '%');
             });
         });
-
-        // ===== 分类筛选 =====
+        
         const tabBtns = document.querySelectorAll('.tab-btn');
         const gameCards = document.querySelectorAll('.game-card');
 
@@ -917,8 +908,7 @@
                 });
             });
         });
-
-        // ===== 卡片依次入场动画（由 hideLoader 调用，不再硬编码延迟） =====
+        
         const style = document.createElement('style');
         style.textContent = `
             @keyframes fadeInUp {
@@ -939,10 +929,8 @@
                 }, baseDelay + i * 100);
             });
         }
-
-        // 如果 sessionStorage 已有标记（重复访问），直接启动卡片动画
-        if (sessionStorage.getItem('hasLoaded')) {
-            // 上面已经在 else 分支处理了，这里不需要重复
+        
+        if (sessionStorage.getItem('hasLoaded')) {            
         }
     </script>
 </body>
