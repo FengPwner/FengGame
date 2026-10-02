@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="FengGame™ 游戏平台 - 复古街机风格游戏门户">
+    <meta name="theme-color" content="#050510">
+    <title>FengGame™ — Arcade Terminal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-deep: #050510;
+            --bg-mid: #0a0a2e;
+            --neon-cyan: #00f3ff;
+            --neon-magenta: #ff00ff;
+            --neon-yellow: #ffe600;
+            --neon-orange: #ff6a00;
+            --neon-green: #39ff14;
+            --grid-color: rgba(0, 243, 255, 0.15);
+            --grid-color-far: rgba(255, 0, 255, 0.08);
+            --card-bg: rgba(10, 10, 46, 0.75);
+            --card-border: rgba(0, 243, 255, 0.25);
+            --text-primary: #e0e0ff;
+            --text-dim: rgba(224, 224, 255, 0.5);
+            --scanline-color: rgba(0, 0, 0, 0.5);
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Share Tech Mono', 'Courier New', monospace;
+            background: var(--bg-deep);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        
+        #starfield {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 9999;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                var(--scanline-color) 2px,
+                var(--scanline-color) 4px
+            );
+            opacity: 0.3;
+        }
+
+        .scanlines::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.4) 100%);
+        }
+
+        
+        .grid-floor {
+            position: fixed;
+            bottom: 0; left: -50%;
+            width: 200%; height: 45%;
+            z-index: 1;
+            pointer-events: none;
+            background:
+                linear-gradient(180deg, transparent 0%, var(--bg-deep) 100%),
+                linear-gradient(90deg, var(--grid-color-far) 1px, transparent 1px),
+                linear-gradient(0deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            transform: perspective(500px) rotateX(60deg);
+            transform-origin: center top;
+            animation: scrollGrid 3s linear infinite;
+            mask-image: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 80%);
+            -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,0.6) 0%, transparent 80%);
+        }
+
+        @keyframes scrollGrid {
+            0% { background-position: 0 0, 0 0, 0 0; }
+            100% { background-position: 0 0, 0 40px, 0 40px; }
+        }
+
+        
+        .sun {
+            position: fixed;
+            top: 8%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            background: linear-gradient(180deg, var(--neon-yellow) 0%, var(--neon-orange) 50%, var(--neon-magenta) 100%);
+            box-shadow:
+                0 0 60px var(--neon-orange),
+                0 0 120px var(--neon-magenta),
+                0 0 200px rgba(255, 0, 255, 0.3);
+            z-index: 0;
+            pointer-events: none;
+            clip-path: polygon(0 0, 100% 0, 100% 55%, 0 55%);
+        }
+
+        .sun::before {
+            content: '';
+            position: absolute;
+            top: 50%; left: 0;
+            width: 100%; height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 8px,
+                var(--bg-deep) 8px,
+                var(--bg-deep) 10px
+            );
+            clip-path: polygon(0 0, 100% 0, 100% 55%, 0 55%);
+        }
+
+        
+        .main-wrapper {
+            position: relative;
+            z-index: 10;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 4rem;
+        }
+
+        
+        .title-area {
+            text-align: center;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .main-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: clamp(1.5rem, 5vw, 2.8rem);
+            color: #fff;
+            text-shadow:
+                2px 2px 0 var(--neon-magenta),
+                -2px -2px 0 var(--neon-cyan);
+            letter-spacing: 4px;
+            position: relative;
+            display: inline-block;
+            animation: glitchShift 3s infinite alternate;
+        }
+
+        .main-title::before,
+        .main-title::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+        }
+
+        .main-title::before {
+            color: var(--neon-cyan);
+            z-index: -1;
+            animation: glitchBefore 2s infinite linear alternate-reverse;
+        }
+
+        .main-title::after {
+            color: var(--neon-magenta);
+            z-index: -2;
+            animation: glitchAfter 3s infinite linear alternate;
+        }
+
+        @keyframes glitchBefore {
+            0%, 100% { clip-path: inset(0 0 0 0); transform: translate(0); }
+            20% { clip-path: inset(20% 0 60% 0); transform: translate(-3px, 2px); }
+            40% { clip-path: inset(40% 0 20% 0); transform: translate(3px, -2px); }
+            60% { clip-path: inset(60% 0 10% 0); transform: translate(-2px, 1px); }
+            80% { clip-path: inset(10% 0 80% 0); transform: translate(2px, -1px); }
+        }
+
+        @keyframes glitchAfter {
+            0%, 100% { clip-path: inset(0 0 0 0); transform: translate(0); }
+            25% { clip-path: inset(30% 0 40% 0); transform: translate(3px, -2px); }
+            50% { clip-path: inset(50% 0 20% 0); transform: translate(-3px, 2px); }
+            75% { clip-path: inset(10% 0 70% 0); transform: translate(2px, 1px); }
+        }
+
+        @keyframes glitchShift {
+            0%, 100% { text-shadow: 2px 2px 0 var(--neon-magenta), -2px -2px 0 var(--neon-cyan); }
+            25% { text-shadow: -2px 2px 0 var(--neon-magenta), 2px -2px 0 var(--neon-cyan); }
+            50% { text-shadow: 2px -2px 0 var(--neon-magenta), -2px 2px 0 var(--neon-cyan); }
+            75% { text-shadow: -2px -2px 0 var(--neon-magenta), 2px 2px 0 var(--neon-cyan); }
+        }
+
+        .version-tag {
+            display: inline-block;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--neon-cyan);
+            border: 1px solid var(--neon-cyan);
+            padding: 0.15rem 0.6rem;
+            border-radius: 2px;
+            margin-left: 0.8rem;
+            vertical-align: middle;
+            animation: blink 1.5s step-end infinite;
+            box-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        
+        .terminal-line {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            font-size: 0.85rem;
+            color: var(--neon-green);
+            text-shadow: 0 0 6px var(--neon-green);
+        }
+
+        .terminal-line .prompt {
+            color: var(--neon-magenta);
+            text-shadow: 0 0 6px var(--neon-magenta);
+        }
+
+        .terminal-line .cursor {
+            display: inline-block;
+            width: 8px; height: 14px;
+            background: var(--neon-green);
+            vertical-align: text-bottom;
+            animation: blink 1s step-end infinite;
+            box-shadow: 0 0 6px var(--neon-green);
+        }
+
+        
+        .category-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 0.5rem 1.2rem;
+            border-radius: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 243, 255, 0.15), transparent);
+            transition: left 0.4s ease;
+        }
+
+        .tab-btn:hover::before,
+        .tab-btn.active::before {
+            left: 100%;
+        }
+
+        .tab-btn.active,
+        .tab-btn:hover {
+            color: var(--neon-cyan);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 12px rgba(0, 243, 255, 0.3), inset 0 0 12px rgba(0, 243, 255, 0.1);
+        }
+
+        
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .game-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 4px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            transform-style: preserve-3d;
+            perspective: 800px;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 3px; height: 100%;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 10px var(--neon-cyan);
+            transition: all 0.3s ease;
+        }
+
+        .game-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 243, 255, 0.06) 0%, transparent 60%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .game-card:hover::after {
+            opacity: 1;
+        }
+
+        .game-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            border-color: var(--neon-cyan);
+            box-shadow:
+                0 10px 30px rgba(0, 243, 255, 0.15),
+                0 0 0 1px rgba(0, 243, 255, 0.1),
+                inset 0 0 30px rgba(0, 243, 255, 0.03);
+        }
+
+        .game-card:hover::before {
+            width: 4px;
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .card-number {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.65rem;
+            color: var(--neon-magenta);
+            text-shadow: 0 0 6px var(--neon-magenta);
+        }
+
+        .card-category {
+            font-size: 0.7rem;
+            color: var(--neon-yellow);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 4px var(--neon-yellow);
+        }
+
+        .card-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #fff;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+        }
+
+        .card-desc {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+            flex-grow: 1;
+        }
+
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-top: 0.8rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .card-status {
+            font-size: 0.7rem;
+            color: var(--neon-green);
+            text-shadow: 0 0 4px var(--neon-green);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .status-dot {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--neon-green);
+            box-shadow: 0 0 6px var(--neon-green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .card-play {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .game-card:hover .card-play {
+            gap: 0.8rem;
+            text-shadow: 0 0 8px var(--neon-cyan);
+        }
+
+        .play-arrow {
+            display: inline-block;
+            transition: transform 0.3s ease;
+        }
+
+        .game-card:hover .play-arrow {
+            transform: translateX(4px);
+        }
+
+        
+        .bottom-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .bottom-card {
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 0, 255, 0.2);
+            border-radius: 4px;
+            padding: 1.5rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bottom-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 3px; height: 100%;
+            background: var(--neon-magenta);
+            box-shadow: 0 0 10px var(--neon-magenta);
+            transition: all 0.3s ease;
+        }
+
+        .bottom-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--neon-magenta);
+            box-shadow:
+                0 8px 25px rgba(255, 0, 255, 0.12),
+                inset 0 0 20px rgba(255, 0, 255, 0.03);
+        }
+
+        .bottom-card:hover::before {
+            width: 4px;
+            box-shadow: 0 0 20px var(--neon-magenta);
+        }
+
+        .bottom-card-title {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.8rem;
+            color: var(--neon-magenta);
+            text-shadow: 0 0 6px var(--neon-magenta);
+            margin-bottom: 0.6rem;
+        }
+
+        .bottom-card-desc {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+
+        
+        footer {
+            text-align: center;
+            padding: 2.5rem 1.5rem 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            margin-top: 3rem;
+            position: relative;
+            z-index: 10;
+        }
+
+        footer p {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            line-height: 1.8;
+            margin-bottom: 0.2rem;
+        }
+
+        footer .footer-copy {
+            color: rgba(255, 255, 255, 0.2);
+            font-size: 0.7rem;
+            margin-top: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        
+        .loader-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: var(--bg-deep);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1.5rem;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+
+        .loader-overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-text {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 1rem;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px var(--neon-cyan);
+        }
+
+        .loader-bar {
+            width: 200px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .loader-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-magenta));
+            box-shadow: 0 0 10px var(--neon-cyan);
+            border-radius: 2px;
+            transition: width 0.3s ease-out;
+        }
+
+        
+        @media (max-width: 768px) {
+            .games-grid, .bottom-links {
+                grid-template-columns: 1fr;
+            }
+            .sun { width: 120px; height: 120px; top: 5%; }
+            .main-title { letter-spacing: 2px; }
+        }
+
+        @media (max-width: 480px) {
+            .main-wrapper { padding: 1.5rem 1rem 3rem; }
+            .game-card { padding: 1.2rem; }
+        }
+
+        
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+            .grid-floor { animation: none; }
+        }
+    </style>
+</head>
+<body>
+
+    
+    <div class="loader-overlay" id="loader">
+        <div class="loader-text">INITIALIZING... <span id="loadPercent">0</span>%</div>
+        <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+    </div>
+
+    
+    <canvas id="starfield"></canvas>
+
+    
+    <div class="scanlines" aria-hidden="true"></div>
+
+    
+    <div class="sun" aria-hidden="true"></div>
+
+    
+    <div class="grid-floor" aria-hidden="true"></div>
+
+    
+    <div class="main-wrapper">
+
+        
+        <div class="title-area">
+            <h1 class="main-title" data-text="FengGame™">FengGame™</h1>
+            <span class="version-tag">V10(4)</span>
+        </div>
+
+        
+        <div class="terminal-line">
+            <span class="prompt">root@fenggame:~$</span> ./launch_arcade.sh <span class="cursor"></span>
+        </div>
+
+        
+        <div class="category-tabs">
+            <button class="tab-btn active" data-filter="all">[ 全部 ]</button>
+            <button class="tab-btn" data-filter="classic">[ 经典 ]</button>
+            <button class="tab-btn" data-filter="adventure">[ 冒险 ]</button>
+            <button class="tab-btn" data-filter="casual">[ 休闲 ]</button>
+        </div>
+
+        
+        <div class="games-grid" id="gamesGrid">
+            
+            <a href="./GsG/gsg.html" class="game-card" data-category="classic">
+                <div class="card-header">
+                    <span class="card-number">#001</span>
+                    <span class="card-category">CLASSIC</span>
+                </div>
+                <div class="card-title">贪吃蛇<br>Snake Game</div>
+                <div class="card-desc">经典街机玩法，控制蛇吃掉食物不断成长，避免撞墙或咬到自己。</div>
+                <div class="card-footer">
+                    <span class="card-status"><span class="status-dot"></span> ONLINE</span>
+                    <span class="card-play">PLAY <span class="play-arrow">→</span></span>
+                </div>
+            </a>
+
+            
+            <a href="./SIG/sig.html" class="game-card" data-category="classic">
+                <div class="card-header">
+                    <span class="card-number">#002</span>
+                    <span class="card-category">CLASSIC</span>
+                </div>
+                <div class="card-title">太空侵略者<br>Space Invaders</div>
+                <div class="card-desc">复古射击经典，操控飞船抵御外星入侵者，保卫地球最后防线。</div>
+                <div class="card-footer">
+                    <span class="card-status"><span class="status-dot"></span> ONLINE</span>
+                    <span class="card-play">PLAY <span class="play-arrow">→</span></span>
+                </div>
+            </a>
+
+            
+            <a href="./BACKDOOMS/THE-BACKDOOMS.html" class="game-card" data-category="adventure">
+                <div class="card-header">
+                    <span class="card-number">#003</span>
+                    <span class="card-category">ADVENTURE</span>
+                </div>
+                <div class="card-title">后室末日<br>THE BACKDOOMS</div>
+                <div class="card-desc">探索无尽的后室空间，在荒诞的黄色房间中求生，寻找出口。</div>
+                <div class="card-footer">
+                    <span class="card-status"><span class="status-dot"></span> ONLINE</span>
+                    <span class="card-play">PLAY <span class="play-arrow">→</span></span>
+                </div>
+            </a>
+
+            
+            <a href="./13F/13F.html" class="game-card" data-category="adventure">
+                <div class="card-header">
+                    <span class="card-number">#004</span>
+                    <span class="card-category">ADVENTURE</span>
+                </div>
+                <div class="card-title">第十三层<br>13th Floor</div>
+                <div class="card-desc">深入恐怖公寓的第十三层，解开层层谜题，面对未知的恐惧。</div>
+                <div class="card-footer">
+                    <span class="card-status"><span class="status-dot"></span> ONLINE</span>
+                    <span class="card-play">PLAY <span class="play-arrow">→</span></span>
+                </div>
+            </a>
+
+            
+            <a href="./W/whistleblower.html" class="game-card" data-category="adventure">
+                <div class="card-header">
+                    <span class="card-number">#005</span>
+                    <span class="card-category">ADVENTURE</span>
+                </div>
+                <div class="card-title">告密者<br>Whistleblower</div>
+                <div class="card-desc">在阴谋与谎言交织的世界中，揭开真相，做出你的选择。</div>
+                <div class="card-footer">
+                    <span class="card-status"><span class="status-dot"></span> ONLINE</span>
+                    <span class="card-play">PLAY <span class="play-arrow">→</span></span>
+                </div>
+            </a>
+
+            
+            <a href="./CE/CE.html" class="game-card" data-category="adventure">
+                <div class="card-header">
+                    <span class="card-number">#006</span>
+                    <span class="card-category">ADVENTURE</span>
+                </div>
+                <div class="card-title">城堡逃脱<br>Castle Escape</div>
+                <div class="card-desc">被困在中世纪城堡中，利用线索和道具，寻找逃脱的路径。</div>
+                <div class="card-footer">
+                    <span class="card-status"><span class="status-dot"></span> ONLINE</span>
+                    <span class="card-play">PLAY <span class="play-arrow">→</span></span>
+                </div>
+            </a>
+
+            
+            <a href="./WtC/WtC.html" class="game-card" data-category="casual">
+                <div class="card-header">
+                    <span class="card-number">#007</span>
+                    <span class="card-category">CASUAL</span>
+                </div>
+                <div class="card-title">给猫洗澡<br>Wash the Cat</div>
+                <div class="card-desc">轻松休闲小游戏，给可爱的小猫洗澡，享受治愈时光。</div>
+                <div class="card-footer">
+                    <span class="card-status"><span class="status-dot"></span> ONLINE</span>
+                    <span class="card-play">PLAY <span class="play-arrow">→</span></span>
+                </div>
+            </a>
+
+            
+            <a href="./VW/VW.html" class="game-card" data-category="casual">
+                <div class="card-header">
+                    <span class="card-number">#008</span>
+                    <span class="card-category">CASUAL</span>
+                </div>
+                <div class="card-title">虚拟战争<br>Virtual War</div>
+                <div class="card-desc">指挥虚拟战场上的军队，制定战略战术，征服敌方领地。</div>
+                <div class="card-footer">
+                    <span class="card-status"><span class="status-dot"></span> ONLINE</span>
+                    <span class="card-play">PLAY <span class="play-arrow">→</span></span>
+                </div>
+            </a>
+        </div>
+
+        
+        <div class="bottom-links">
+            <a href="../function/Statement.html" class="bottom-card">
+                <div class="bottom-card-title">免责声明 / 隐私政策</div>
+                <div class="bottom-card-desc">查看本网站的服务条款与隐私保护政策。</div>
+            </a>
+            <a href="./function/about.html" class="bottom-card">
+                <div class="bottom-card-title">关于 FengGame™</div>
+                <div class="bottom-card-desc">了解这个复古游戏平台的故事与理念。</div>
+            </a>
+        </div>
+
+        
+        <footer>
+            <p>网站所属服务器位于境外，无 ICP 互联网信息服务备案</p>
+            <p>网站绑定域名于境外机构管理，无 ICP 互联网信息服务备案</p>
+            <p class="footer-copy">© 2026 · POWERED BY FENGGAME · ALL RIGHTS RESERVED</p>
+        </footer>
+    </div>
+
+    <script>
+        // ===== 加载画面（真实渲染等待 + sessionStorage 跳过重复加载） =====
+        const loader = document.getElementById('loader');
+        const loaderBarFill = document.querySelector('.loader-bar-fill');
+        const loaderText = document.querySelector('.loader-text');
+        let loaderHidden = false;
+
+        function hideLoader() {
+            if (loaderHidden) return;
+            loaderHidden = true;
+            loader.classList.add('hidden');
+            sessionStorage.setItem('hasLoaded', 'true');
+            // 延迟启动卡片入场动画，等遮罩层淡出
+            setTimeout(() => {
+                loader.style.display = 'none';
+                startCardAnimations(0);
+            }, 250);
+        }
+
+        function setProgress(percent) {
+            loaderBarFill.style.width = percent + '%';
+            const percentSpan = document.getElementById('loadPercent');
+            if (percentSpan) {
+                percentSpan.textContent = percent;
+            }
+        }
+
+        // 首次访问才执行加载逻辑
+        if (!sessionStorage.getItem('hasLoaded')) {
+            // DOM 内容加载完毕 → 进度到 70%
+            document.addEventListener('DOMContentLoaded', () => {
+                setProgress(70);
+            });
+
+            // 所有资源加载完毕 → 进度到 100%，然后结束
+            window.addEventListener('load', () => {
+                setProgress(100);
+                // 确保至少展示 300ms，防止闪屏
+                const elapsed = Date.now() - window.performance.timing.loadEventStart;
+                const minDisplay = Math.max(300 - elapsed, 0);
+                setTimeout(hideLoader, minDisplay);
+            });
+
+            // 超时兜底：8 秒内未完成则强制结束，防止永久白屏
+            setTimeout(() => {
+                if (!loaderHidden) {
+                    setProgress(100);
+                    hideLoader();
+                }
+            }, 8000);
+        } else {
+            // 已加载过 — 直接隐藏，无动画
+            loader.style.display = 'none';
+            startCardAnimations(0);
+        }
+
+        // ===== 星空粒子背景 =====
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        const STAR_COUNT = 150;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function createStars() {
+            stars = [];
+            for (let i = 0; i < STAR_COUNT; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.5 + 0.5,
+                    speed: Math.random() * 0.3 + 0.05,
+                    opacity: Math.random() * 0.8 + 0.2,
+                    twinkleSpeed: Math.random() * 0.02 + 0.005,
+                    twinklePhase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        function drawStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const time = Date.now() * 0.001;
+            stars.forEach(star => {
+                const twinkle = Math.sin(time * star.twinkleSpeed * 10 + star.twinklePhase) * 0.3 + 0.7;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(200, 200, 255, ${star.opacity * twinkle})`;
+                ctx.fill();
+                star.y += star.speed;
+                if (star.y > canvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * canvas.width;
+                }
+            });
+            requestAnimationFrame(drawStars);
+        }
+
+        resizeCanvas();
+        createStars();
+        drawStars();
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            createStars();
+        });
+
+        // ===== 卡片 3D 鼠标追踪 =====
+        document.querySelectorAll('.game-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                card.style.setProperty('--mouse-x', x + '%');
+                card.style.setProperty('--mouse-y', y + '%');
+            });
+        });
+
+        // ===== 分类筛选 =====
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const gameCards = document.querySelectorAll('.game-card');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const filter = btn.dataset.filter;
+
+                gameCards.forEach(card => {
+                    if (filter === 'all' || card.dataset.category === filter) {
+                        card.style.display = 'flex';
+                        card.style.animation = 'fadeInUp 0.5s ease-out forwards';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
+
+        // ===== 卡片依次入场动画（由 hideLoader 调用，不再硬编码延迟） =====
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInUp {
+                from { opacity: 0; transform: translateY(30px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        function startCardAnimations(baseDelay) {
+            gameCards.forEach((card, i) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, baseDelay + i * 100);
+            });
+        }
+
+        // 如果 sessionStorage 已有标记（重复访问），直接启动卡片动画
+        if (sessionStorage.getItem('hasLoaded')) {
+            // 上面已经在 else 分支处理了，这里不需要重复
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #222; }
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#game-box {
+    display: flex;
+    flex-direction: column; 
+    align-items: center;
+    position: relative;
+}
+
+#canvas {
+    display: block;
+    border: 2px solid #fff;
+    width: 95vw; 
+    height: auto; 
+    max-height: 80vh; 
+}
+
+
+#pauseBtn {
+    margin-top: 15px;  
+    padding: 10px 40px;
+    font-size: 18px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    user-select: none; 
+    -webkit-tap-highlight-color: transparent;
+}
+
+#pauseBtn:active {
+    transform: scale(0.95);
+}
+
+#pauseBtn.hidden {
+    opacity: 0 !important;
+    pointer-events: none;
+}
